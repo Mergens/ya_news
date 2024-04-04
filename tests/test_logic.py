@@ -24,7 +24,7 @@ class TestCommentCreation(TestCase):
         # Адрес страницы с новостью.
         cls.url = reverse('news:detail', args=(cls.news.id,))
         # Создаём пользователя и клиент, логинимся в клиенте.
-        cls.user = User.objects.create(username='Мимо Крокодил')
+        cls.user = User.objects.create(username='Пользователь теста')
         cls.auth_client = Client()
         cls.auth_client.force_login(cls.user)
         # Данные для POST-запроса при создании комментария.

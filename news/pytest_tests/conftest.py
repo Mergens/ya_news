@@ -1,13 +1,15 @@
 # conftest.py
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Импортируем класс клиента.
 from django.test.client import Client
-from django.db import models
+from django.utils import timezone
 
 # Импортируем модель заметки, чтобы создать экземпляр.
 from news.models import News, Comment
+
+from yanews import settings
 
 
 @pytest.fixture
@@ -22,8 +24,7 @@ def not_author(django_user_model):
 
 
 @pytest.fixture
-def author_client(author):  # Вызываем фикстуру автора.
-    # Создаём новый экземпляр клиента, чтобы не менять глобальный.
+def author_client(author):
     client = Client()
     client.force_login(author)  # Логиним автора в клиенте.
     return client
@@ -53,6 +54,11 @@ def pk_news_for_args(news):
 
 
 @pytest.fixture
+def slug_for_args(news):
+    return (news.slug,)
+
+
+@pytest.fixture
 def comment(news, author):
     comment = Comment.objects.create(
         news=news,
@@ -63,8 +69,36 @@ def comment(news, author):
 
 
 @pytest.fixture
-# Фикстура запрашивает другую фикстуру создания заметки.
-def slug_for_args(news):
-    # И возвращает кортеж, который содержит slug заметки.
-    # На то, что это кортеж, указывает запятая в конце выражения.
-    return (news.slug,)
+def news_list():
+    today = datetime.today()
+    all_news = [
+        News(
+            title=f'Новость {index}',
+            text='Просто текст.',
+            date=today - timedelta(days=index)
+        )
+        for index in range(settings.NEWS_COUNT_ON_HOME_PAGE + 1)
+    ]
+    News.objects.bulk_create(all_news)
+
+
+@pytest.fixture
+def comments_list(news, author):
+    now = timezone.now()
+    for index in range(10):
+        comment = Comment.objects.create(
+            news=news,
+            author=author,
+            text=f'Текст {index}'
+        )
+        comment.created = now + timedelta(days=index)
+        comment.save()
+
+
+@pytest.fixture
+def form_data():
+    return {
+        'title': 'Новый заголовок',
+        'text': 'Новый текст',
+        'slug': 'new-slug'
+    }
